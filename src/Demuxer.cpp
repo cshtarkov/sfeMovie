@@ -56,7 +56,6 @@ namespace sfe
         switch (type)
         {
             case AVMEDIA_TYPE_AUDIO:    return Audio;
-            case AVMEDIA_TYPE_SUBTITLE:     return Subtitle;
             case AVMEDIA_TYPE_VIDEO:    return Video;
             default:                    return Unknown;
         }
@@ -108,7 +107,7 @@ namespace sfe
     }
     
     Demuxer::Demuxer(const std::string& sourceFile, std::shared_ptr<Timer> timer,
-                     VideoStream::Delegate& videoDelegate, SubtitleStream::Delegate& subtitleDelegate) :
+                     VideoStream::Delegate& videoDelegate) :
     m_formatCtx(nullptr),
     m_eofReached(false),
     m_streams(),
@@ -117,7 +116,6 @@ namespace sfe
     m_timer(timer),
     m_connectedAudioStream(nullptr),
     m_connectedVideoStream(nullptr),
-    m_connectedSubtitleStream(nullptr),
     m_duration(sf::Time::Zero)
     {
         CHECK(sourceFile.size(), "Demuxer::Demuxer() - invalid argument: sourceFile");
@@ -178,11 +176,6 @@ namespace sfe
                         
                         sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codec->codec_id) + " audio stream");
                         break;
-                    case AVMEDIA_TYPE_SUBTITLE:
-                        stream = std::make_shared<SubtitleStream>(m_formatCtx, ffstream, *this, timer, subtitleDelegate);
-                        
-                        sfeLogDebug("Loaded " + avcodec_get_name(ffstream->codec->codec_id) + " subtitle stream");
-                        break;
                     default:
                         m_ignoredStreams[ffstream->index] = Stream::AVStreamDescription(ffstream);
                         sfeLogDebug(m_ignoredStreams[ffstream->index] + " ignored");
@@ -208,27 +201,6 @@ namespace sfe
             sfeLogWarning("The media duration could not be retreived");
         }
         
-        // Now that all streams are loaded, let's tell the subtitle rendering system what's
-        // the video frame size
-        std::set< std::shared_ptr<Stream> > videoStreams = getStreamsOfType(Video);
-        std::set< std::shared_ptr<Stream> > subtitleStreams = getStreamsOfType(Subtitle);
-        
-        if (! subtitleStreams.empty() && ! videoStreams.empty())
-        {
-            std::shared_ptr<VideoStream> firstVideoStream = std::dynamic_pointer_cast<VideoStream>(*videoStreams.begin());
-            
-            CHECK(firstVideoStream, "Internal inconcistency - unexpected stream type in video streams storage");
-            sf::Vector2i videoFrameSize = firstVideoStream->getFrameSize();
-            
-            for (std::shared_ptr<Stream> stream : subtitleStreams)
-            {
-                std::shared_ptr<SubtitleStream> subtitleStream = std::dynamic_pointer_cast<SubtitleStream>(stream);
-                CHECK(subtitleStream, "Internal inconcistency - unexpected stream type in subtitle streams storage");
-                
-                subtitleStream->setRenderingFrame(videoFrameSize.x, videoFrameSize.y);
-            }
-        }
-        
         m_timer->addObserver(*this, DemuxerTimerPriority);
     }
     
@@ -243,7 +215,6 @@ namespace sfe
         // the streams lose their connection to the codec and leak
         m_streams.clear();
         m_connectedAudioStream.reset();
-        m_connectedSubtitleStream.reset();
         m_connectedVideoStream.reset();
         
         if (m_formatCtx)
@@ -369,40 +340,6 @@ namespace sfe
         return std::dynamic_pointer_cast<VideoStream>(m_connectedVideoStream);
     }
     
-    void Demuxer::selectSubtitleStream(std::shared_ptr<SubtitleStream> stream)
-    {
-        Status oldStatus = m_timer->getStatus();
-        
-        if (oldStatus == Playing)
-            m_timer->pause();
-        
-        if (stream != m_connectedSubtitleStream)
-        {
-            if (m_connectedSubtitleStream)
-                m_connectedSubtitleStream->disconnect();
-            
-            if (stream)
-                stream->connect();
-            
-            m_connectedSubtitleStream = stream;
-        }
-        
-        if (oldStatus == Playing)
-            m_timer->play();
-    }
-    
-    void Demuxer::selectFirstSubtitleStream()
-    {
-        std::set< std::shared_ptr<Stream> > subtitleStreams = getStreamsOfType(Subtitle);
-        if (subtitleStreams.size())
-            selectSubtitleStream(std::dynamic_pointer_cast<SubtitleStream>(*subtitleStreams.begin()));
-    }
-    
-    std::shared_ptr<SubtitleStream> Demuxer::getSelectedSubtitleStream() const
-    {
-        return std::dynamic_pointer_cast<SubtitleStream>(m_connectedSubtitleStream);
-    }
-    
     void Demuxer::feedStream(Stream& stream)
     {
         CHECK(! stream.isPassive(), "Internal inconcistency - Cannot feed a passive stream");
@@ -442,9 +379,6 @@ namespace sfe
         
         if (m_connectedAudioStream)
             set.insert(m_connectedAudioStream);
-        
-        if (m_connectedSubtitleStream)
-            set.insert(m_connectedSubtitleStream);
         
         return set;
     }
@@ -579,8 +513,7 @@ namespace sfe
             // We don't want to store the packets for inactive streams,
             // let them be freed
             if (targetStream == getSelectedVideoStream() ||
-                targetStream == getSelectedAudioStream() ||
-                targetStream == getSelectedSubtitleStream())
+                targetStream == getSelectedAudioStream())
             {
                 if (targetStream.get() == &stream || targetStream->isPassive())
                     targetStream->pushEncodedData(packet);
@@ -631,9 +564,7 @@ namespace sfe
             connectedStreams.insert(m_connectedVideoStream);
         if (m_connectedAudioStream)
             connectedStreams.insert(m_connectedAudioStream);
-        if (m_connectedSubtitleStream)
-            connectedStreams.insert(m_connectedSubtitleStream);
-        
+
         CHECK(!connectedStreams.empty(), "Inconcistency error: seeking with no active stream");
         
         // Trivial seeking to beginning

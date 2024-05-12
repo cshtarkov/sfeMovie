@@ -53,15 +53,13 @@ namespace sfe
         try
         {
             m_timer = std::make_shared<Timer>();
-            m_demuxer = std::make_shared<Demuxer>(filename, m_timer, *this, *this);
+            m_demuxer = std::make_shared<Demuxer>(filename, m_timer, *this);
             m_audioStreamsDesc = m_demuxer->computeStreamDescriptors(Audio);
             m_videoStreamsDesc = m_demuxer->computeStreamDescriptors(Video);
-            m_subtitleStreamsDesc = m_demuxer->computeStreamDescriptors(Subtitle);
-            
+
             std::set< std::shared_ptr<Stream> > audioStreams = m_demuxer->getStreamsOfType(Audio);
             std::set< std::shared_ptr<Stream> > videoStreams = m_demuxer->getStreamsOfType(Video);
-            std::set< std::shared_ptr<Stream> > subtitleStreams = m_demuxer->getStreamsOfType(Subtitle);
-            
+
             m_demuxer->selectFirstAudioStream();
             m_demuxer->selectFirstVideoStream();
             
@@ -94,7 +92,6 @@ namespace sfe
         {
             case Audio: return m_audioStreamsDesc;
             case Video: return m_videoStreamsDesc;
-            case Subtitle: return m_subtitleStreamsDesc;
             default: CHECK(false, "Movie::getStreams() - Unknown stream type:" + mediaTypeToString(type));
         }
     }
@@ -129,9 +126,6 @@ namespace sfe
                 return true;
             case Video:
                 m_demuxer->selectVideoStream(std::dynamic_pointer_cast<VideoStream>(streamToSelect));
-                return true;
-            case Subtitle:
-                m_demuxer->selectSubtitleStream(std::dynamic_pointer_cast<SubtitleStream>(streamToSelect));
                 return true;
             default:
                 sfeLogWarning("Movie::selectStream() - stream activation for stream of kind "
@@ -345,26 +339,6 @@ namespace sfe
         m_movieView.setPosition(frame.left, frame.top);
         m_videoSprite.setScale((float)new_size.x / movie_size.x, (float)new_size.y / movie_size.y);
         m_displayFrame = frame;
-        
-        sf::Vector2f subtitlesCenter(m_displayFrame.left + m_displayFrame.width / 2,
-                                     m_displayFrame.top + m_displayFrame.height * 0.9f);
-        
-        for (sf::Sprite& subtitleSprite : m_subtitleSprites)
-        {
-            const sf::Vector2u& subSize = subtitleSprite.getTexture()->getSize();
-            subtitleSprite.setPosition(subtitlesCenter.x - (subSize.x * m_videoSprite.getScale().x / 2),
-                                       subtitlesCenter.y - (subSize.y * m_videoSprite.getScale().y / 2));
-            subtitleSprite.setScale(m_videoSprite.getScale().x, m_videoSprite.getScale().y);
-            
-            const float bottom = subtitleSprite.getPosition().y +
-                subtitleSprite.getLocalBounds().height * m_videoSprite.getScale().x;
-            if (bottom > m_displayFrame.height)
-            {
-                subtitleSprite.setPosition(subtitleSprite.getPosition().x,
-                                           m_displayFrame.height - subtitleSprite.getLocalBounds().height *
-                                           m_videoSprite.getScale().y -10);
-            }
-        }
     }
     
     float MovieImpl::getFramerate() const
@@ -486,11 +460,7 @@ namespace sfe
     void MovieImpl::draw(sf::RenderTarget& target, sf::RenderStates states) const
     {
         target.draw(m_videoSprite, states);
-        for (const sf::Sprite& sprite : m_subtitleSprites)
-        {
-            target.draw(sprite, states);
-        }
-        
+
 #if LAYOUT_DEBUGGER_ENABLED
         target.draw(m_debugger, states);
 #endif
@@ -500,54 +470,5 @@ namespace sfe
     {
         if (m_videoSprite.getTexture() != &image)
             m_videoSprite.setTexture(image);
-    }
-    
-    void MovieImpl::didUpdateSubtitle(const SubtitleStream& sender, const std::list<sf::Sprite>& subs, const std::list<sf::Vector2i>& positions)
-    {
-        m_subtitleSprites = subs;
-        bool use_position = !positions.empty();
-        sf::Vector2f subtitlesCenter(m_displayFrame.left + m_displayFrame.width / 2,
-                                     m_displayFrame.top + m_displayFrame.height * 0.9f);
-        std::list<sf::Vector2i>::const_iterator pos_it = positions.begin();
-        
-        for (sf::Sprite& subtitleSprite : m_subtitleSprites)
-        {
-            const sf::Vector2u& subSize = subtitleSprite.getTexture()->getSize();
-            
-            if (use_position)
-            {
-                sf::Vector2i pos = *pos_it;
-                subtitleSprite.setPosition(m_videoSprite.getPosition().x + pos.x * m_videoSprite.getScale().x,
-                                           m_videoSprite.getPosition().y + pos.y * m_videoSprite.getScale().y);
-                ++pos_it;
-            }
-            else
-            {
-                subtitleSprite.setPosition(subtitlesCenter.x - (subSize.x * m_videoSprite.getScale().x / 2),
-                                           subtitlesCenter.y - (subSize.y * m_videoSprite.getScale().y / 2));
-            }
-            
-            subtitleSprite.setScale(m_videoSprite.getScale().x, m_videoSprite.getScale().y);
-            
-            const float bottom = subtitleSprite.getPosition().y +
-                subtitleSprite.getLocalBounds().height * m_videoSprite.getScale().y;
-            if (bottom > m_displayFrame.height)
-            {
-                subtitleSprite.setPosition(subtitleSprite.getPosition().x,
-                                           m_displayFrame.height - subtitleSprite.getLocalBounds().height *
-                                           m_videoSprite.getScale().y - 10);
-            }
-            
-            m_debugger.bind(&subtitleSprite);
-        }
-        
-        if (m_subtitleSprites.empty())
-            m_debugger.bind(nullptr);
-    }
-    
-    void MovieImpl::didWipeOutSubtitles(const SubtitleStream& sender)
-    {
-        //if (m_subtitleSprites.size()>0) // disable this "fix" for now to let the bug appear
-            m_subtitleSprites.clear();
     }
 }

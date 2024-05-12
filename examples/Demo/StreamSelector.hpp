@@ -31,7 +31,7 @@
 class StreamSelector
 {
 public:
-    /** Initial setup is to select the first video and audio stream, and no subtitle stream
+    /** Initial setup is to select the first video and audio stream
      */
     StreamSelector(sfe::Movie& movie);
     

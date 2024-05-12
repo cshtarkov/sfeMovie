@@ -8,20 +8,10 @@
 #include "Utilities.hpp"
 #include <SFML/Audio.hpp>
 
-class DummyDelegate : public sfe::VideoStream::Delegate, public sfe::SubtitleStream::Delegate {
+class DummyDelegate : public sfe::VideoStream::Delegate {
 	void didUpdateVideo(const sfe::VideoStream& sender, const sf::Texture& image)
 	{
 	}
-    
-    void didUpdateSubtitle(const sfe::SubtitleStream& sender,
-                           const std::list<sf::Sprite>& subimages,
-                           const std::list<sf::Vector2i>& positions)
-    {
-    }
-    
-    void didWipeOutSubtitles(const sfe::SubtitleStream& sender)
-    {
-    }
     
 };
 

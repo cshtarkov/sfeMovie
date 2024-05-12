@@ -33,12 +33,10 @@ StreamSelector::StreamSelector(sfe::Movie& movie)
 {
     m_selectedStreamIndexes[sfe::Video] = 0;
     m_selectedStreamIndexes[sfe::Audio] = 0;
-    m_selectedStreamIndexes[sfe::Subtitle] = -1;
-    
+
     m_streams[sfe::Video] = &movie.getStreams(sfe::Video);
     m_streams[sfe::Audio] = &movie.getStreams(sfe::Audio);
-    m_streams[sfe::Subtitle] = &movie.getStreams(sfe::Subtitle);
-    
+
     if (m_selectedStreamIndexes[sfe::Video] >= 0 &&
         m_selectedStreamIndexes[sfe::Video] < m_streams[sfe::Video]->size())
         movie.selectStream(m_streams[sfe::Video]->at(m_selectedStreamIndexes[sfe::Video]));
@@ -46,10 +44,6 @@ StreamSelector::StreamSelector(sfe::Movie& movie)
     if (m_selectedStreamIndexes[sfe::Audio] >= 0 &&
         m_selectedStreamIndexes[sfe::Audio] < m_streams[sfe::Audio]->size())
         movie.selectStream(m_streams[sfe::Audio]->at(m_selectedStreamIndexes[sfe::Audio]));
-    
-    if (m_selectedStreamIndexes[sfe::Subtitle] >= 0 &&
-        m_selectedStreamIndexes[sfe::Subtitle] < m_streams[sfe::Subtitle]->size())
-        movie.selectStream(m_streams[sfe::Subtitle]->at(m_selectedStreamIndexes[sfe::Subtitle]));
 }
 
 void StreamSelector::selectNextStream(sfe::MediaType type)

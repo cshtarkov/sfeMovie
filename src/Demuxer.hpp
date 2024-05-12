@@ -29,7 +29,6 @@
 #include "Stream.hpp"
 #include "AudioStream.hpp"
 #include "VideoStream.hpp"
-#include "SubtitleStream.hpp"
 #include "Timer.hpp"
 #include <map>
 #include <string>
@@ -55,7 +54,7 @@ namespace sfe
         
         /** Describes a decoder
          *
-         * Ie. an audio/video/subtitle stream decoder for h.264, theora, vp9, mp3, pcm, srt... streams
+         * Ie. an audio/video stream decoder for h.264, theora, vp9, mp3, pcm, srt... streams
          */
         struct DecoderInfo
         {
@@ -82,7 +81,7 @@ namespace sfe
          * @param timer the timer with which the media streams will be synchronized
          * @param videoDelegate the delegate that will handle the images produced by the VideoStreams
          */
-        Demuxer(const std::string& sourceFile, std::shared_ptr<Timer> timer, VideoStream::Delegate& videoDelegate, SubtitleStream::Delegate& subtitleDelegate);
+        Demuxer(const std::string& sourceFile, std::shared_ptr<Timer> timer, VideoStream::Delegate& videoDelegate);
         
         /** Default destructor
          */
@@ -150,27 +149,6 @@ namespace sfe
          * @return the currently selected video stream, or nullptr if there's none
          */
         std::shared_ptr<VideoStream> getSelectedVideoStream() const;
-        
-        /** Enable the given subtitle stream and connect it to the reference timer
-         *
-         * If another stream of the same kind is already enabled, it is first disabled and disconnected
-         * so that only one stream of the same kind can be enabled at the same time.
-         *
-         * @param stream the video stream to enable and connect for playing, or nullptr to disable video
-         */
-        void selectSubtitleStream(std::shared_ptr<SubtitleStream> stream);
-        
-        /** Enable the first found video stream, if it exists
-         *
-         * @see selectAudioStream
-         */
-        void selectFirstSubtitleStream();
-        
-        /** Get the currently selected subtitle stream, if there's one
-         *
-         * @return the currently selected subtitle stream, or nullptr if there's none
-         */
-        std::shared_ptr<SubtitleStream> getSelectedSubtitleStream() const;
         
         /** Read encoded data from the media and makes sure that the given stream
          * has enough data
@@ -264,7 +242,6 @@ namespace sfe
         std::shared_ptr<Timer> m_timer;
         std::shared_ptr<Stream> m_connectedAudioStream;
         std::shared_ptr<Stream> m_connectedVideoStream;
-        std::shared_ptr<Stream> m_connectedSubtitleStream;
         sf::Time m_duration;
         std::map<const Stream*, std::list<AVPacket*> > m_pendingDataForActiveStreams;
         

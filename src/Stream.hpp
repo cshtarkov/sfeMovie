@@ -112,7 +112,7 @@ namespace sfe
          */
         virtual bool needsMoreData() const;
         
-        /** Get the stream kind (either audio, video or subtitle stream)
+        /** Get the stream kind (either audio or video stream)
          *
          * @return the kind of stream represented by this stream
          */

@@ -45,7 +45,6 @@ namespace sfe
      *
      * Conversion is done as follow:
      * Audio      -> audio
-     * Subtitle   -> subtitle
      * Video      -> video
      * Unknown    -> unknown
      *
