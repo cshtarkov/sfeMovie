@@ -71,6 +71,8 @@ namespace sfe
         // Load the codec
         m_context = avcodec_alloc_context3(m_codec); // TODO: will leak if later steps throw
         CHECK(m_context, "Stream() - unable to allocate codec context for codec " + std::string(avcodec_get_name(m_stream->codecpar->codec_id)));
+        err = avcodec_parameters_to_context(m_context, m_stream->codecpar);
+        CHECK0(err, "Stream() - unable to copy codec parameters to context for codec " + std::string(avcodec_get_name(m_stream->codecpar->codec_id)));
         err = avcodec_open2(m_context, m_codec, nullptr);
         CHECK0(err, "Stream() - unable to load decoder for codec " + std::string(avcodec_get_name(m_stream->codecpar->codec_id)));
         
