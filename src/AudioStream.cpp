@@ -300,21 +300,18 @@ namespace sfe
     
     bool AudioStream::decodePacket(AVPacket* packet, AVFrame* outputFrame, bool& gotFrame)
     {
-        bool needsMoreDecoding = false;
-        int igotFrame = 0;
-        
-        int decodedLength = packet->size;
-        gotFrame = (igotFrame != 0);
-        CHECK(decodedLength >= 0, "AudioStream::decodePacket() - error: decodedLength=" + s(decodedLength));
-        
-        if (decodedLength < packet->size)
-        {
-            needsMoreDecoding = true;
-            packet->data += decodedLength;
-            packet->size -= decodedLength;
+        gotFrame = false;
+
+        if (avcodec_send_packet(m_context, packet) != 0) {
+          return true;
         }
-        
-        return needsMoreDecoding;
+
+        if (avcodec_receive_frame(m_context, outputFrame) != 0) {
+          return true;
+        }
+
+        gotFrame = true;
+        return false;
     }
     
     void AudioStream::initResampler()
