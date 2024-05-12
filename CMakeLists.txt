@@ -102,6 +102,7 @@ message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
 file(GLOB SOURCE_FILES ${SOURCES_DIR}/[a-z,A-Z]*.[c,h]* ${SOURCES_DIR}/DebugTools/[a-z,A-Z]*.[c,h]*)
 file(GLOB HEADER_FILES RELATIVE ${PROJECT_SOURCE_DIR} "include/sfeMovie/[a-z,A-Z]*.[h]*")
 
+add_definitions(-DFF_API_OLD_CHANNEL_LAYOUT -DFF_API_INIT_PACKET)
 add_definitions(-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DSFE_EXPORTS)
 if (APPLE) # ========================================== macOS ========================================== #
     # add an option to let the user specify a custom directory for framework installation
