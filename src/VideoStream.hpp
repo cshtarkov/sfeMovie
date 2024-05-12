@@ -52,7 +52,7 @@ namespace sfe
          */
         virtual ~VideoStream();
         
-        /** Get the stream kind (either audio, video or subtitle stream)
+        /** Get the stream kind (either audio or video)
          *
          * @return the kind of stream represented by this stream
          */

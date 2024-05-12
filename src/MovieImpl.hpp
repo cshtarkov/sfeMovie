@@ -31,14 +31,13 @@
 #include <stdexcept>
 #include <SFML/Config.hpp>
 #include "VideoStream.hpp"
-#include "SubtitleStream.hpp"
 #include "DebugTools/LayoutDebugger.hpp"
 
 namespace sfe
 {
     class Demuxer;
     
-    class MovieImpl : public VideoStream::Delegate, public SubtitleStream::Delegate, public sf::Drawable
+    class MovieImpl : public VideoStream::Delegate, public sf::Drawable
     {
     public:
         MovieImpl(sf::Transformable& movieView);
@@ -141,20 +140,14 @@ namespace sfe
         
         void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
         void didUpdateVideo(const VideoStream& sender, const sf::Texture& image) override;
-        void didUpdateSubtitle(const SubtitleStream& sender,
-                               const std::list<sf::Sprite>& sprites,
-                               const std::list<sf::Vector2i>& positions) override;
-        void didWipeOutSubtitles(const SubtitleStream& sender) override;
-        
+
     private:
         sf::Transformable& m_movieView;
         std::shared_ptr<Demuxer> m_demuxer;
         std::shared_ptr<Timer> m_timer;
         sf::Sprite m_videoSprite;
-        std::list<sf::Sprite> m_subtitleSprites;
         Streams m_audioStreamsDesc;
         Streams m_videoStreamsDesc;
-        Streams m_subtitleStreamsDesc;
         sf::FloatRect m_displayFrame;
         LayoutDebugger<sf::Sprite> m_debugger;
     };

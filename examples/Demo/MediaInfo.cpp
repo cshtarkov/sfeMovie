@@ -45,7 +45,6 @@ std::string mediaTypeToString(sfe::MediaType type)
     switch (type)
     {
         case sfe::Audio:    return "audio";
-        case sfe::Subtitle: return "subtitle";
         case sfe::Video:    return "video";
         case sfe::Unknown:  return "unknown";
         default:            return "(null)";
@@ -65,23 +64,13 @@ void displayMediaInfo(const sfe::Movie& movie)
     
     const sfe::Streams& videoStreams = movie.getStreams(sfe::Video);
     const sfe::Streams& audioStreams = movie.getStreams(sfe::Audio);
-    const sfe::Streams& subtitleStreams = movie.getStreams(sfe::Subtitle);
-    
-    std::cout << videoStreams.size() + audioStreams.size() + subtitleStreams.size() << " streams found in the media" << std::endl;
+
+    std::cout << videoStreams.size() + audioStreams.size() << " streams found in the media" << std::endl;
     
     for (const sfe::StreamDescriptor& descriptor : videoStreams)
         std::cout << " #" << descriptor.identifier << " : " << mediaTypeToString(descriptor.type) << std::endl;
     
     for (const sfe::StreamDescriptor& descriptor : audioStreams)
-    {
-        std::cout << " #" << descriptor.identifier << " : " << mediaTypeToString(descriptor.type);
-        
-        if (!descriptor.language.empty())
-            std::cout << " (language: " << descriptor.language << ")";
-        std::cout << std::endl;
-    }
-    
-    for (const sfe::StreamDescriptor& descriptor : subtitleStreams)
     {
         std::cout << " #" << descriptor.identifier << " : " << mediaTypeToString(descriptor.type);
         

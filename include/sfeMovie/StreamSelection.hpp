@@ -34,7 +34,6 @@ namespace sfe
     enum MediaType
     {
         Audio,
-        Subtitle,
         Video,
         Unknown
     };
@@ -51,7 +50,7 @@ namespace sfe
          */
         static StreamDescriptor NoSelection(MediaType type);
         
-        MediaType type;            //!< Stream kind: video, audio or subtitle
+        MediaType type;            //!< Stream kind: video or audio
         int identifier;            //!< Internal stream identifier in the media, used for choosing which stream to enable
         std::string language;    //!< Language code defined by ISO 639-2, if set by the media
     };

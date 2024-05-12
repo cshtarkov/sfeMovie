@@ -57,7 +57,6 @@ namespace sfe
         switch (type)
         {
             case Audio:        return "audio";
-            case Subtitle:    return "subtitle";
             case Video:        return "video";
             case Unknown:    return "unknown";
             default:

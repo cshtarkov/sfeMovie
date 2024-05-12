@@ -63,7 +63,6 @@ void displayShortcuts()
     << "\tI - Log media info and current state\n"
     << "\tAlt + V - Select next video stream\n"
     << "\tAlt + A - Select next audio stream\n"
-    << "\tAlt + S - Select next subtitle stream"
     << std::endl;
 }
 
@@ -163,13 +162,6 @@ int main(int argc, const char *argv[])
                         
                     case sf::Keyboard::I:
                         displayMediaInfo(movie);;
-                        break;
-                        
-                    case sf::Keyboard::S:
-                        if (ev.key.alt)
-                            selector.selectNextStream(sfe::Subtitle);
-                        else
-                            movie.stop();
                         break;
                         
                     case sf::Keyboard::V:
