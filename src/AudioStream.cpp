@@ -340,7 +340,6 @@ namespace sfe
 
         err = av_channel_layout_check(&m_stream->codecpar->ch_layout);
         CHECK(err, "AudioStream::initResampler() - invalid channel layout");
-        CHECK(m_stream->codecpar->ch_layout.order != AV_CHANNEL_ORDER_CUSTOM, "AudioStream::initResampler() - unhandled custom channel order");
 
         // Constant output channel layout
         AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
