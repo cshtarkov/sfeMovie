@@ -52,6 +52,14 @@ namespace sfe
         }
         
         const int BytesPerSample = sizeof(sf::Int16); // Signed 16 bits audio sample
+
+        int getStereoChannelCount()
+        {
+          AVChannelLayout layout = AV_CHANNEL_LAYOUT_STEREO;
+          const int channels = layout.nb_channels;
+          av_channel_layout_uninit(&layout);
+          return channels;
+        }
     }
 
     AudioStream::AudioStream(AVFormatContext*& formatCtx, AVStream*& stream, DataSource& dataSource,
@@ -80,13 +88,13 @@ namespace sfe
         m_sampleRatePerChannel = m_stream->codecpar->sample_rate;
         
         // Alloc a two seconds buffer
-        m_samplesBuffer = (sf::Int16*)av_malloc(sizeof(sf::Int16) * av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO)
+        m_samplesBuffer = (sf::Int16*)av_malloc(sizeof(sf::Int16) * getStereoChannelCount()
                                                 * m_sampleRatePerChannel * 2); // * 2 is for 2 seconds
         CHECK(m_samplesBuffer, "AudioStream::AudioStream() - out of memory");
         
         // Initialize the sf::SoundStream
         // Whatever the channel count is, it'll we resampled to stereo
-        sf::SoundStream::initialize(av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO), m_sampleRatePerChannel);
+        sf::SoundStream::initialize(getStereoChannelCount(), m_sampleRatePerChannel);
         
         // Initialize resampler to be able to give signed 16 bits samples to SFML
         initResampler();
@@ -223,7 +231,7 @@ namespace sfe
         AVPacket* packet = nullptr;
         data.samples = m_samplesBuffer;
         
-        const int stereoChannelCount = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+        const int stereoChannelCount = getStereoChannelCount();
         
         while (data.sampleCount < stereoChannelCount * m_sampleRatePerChannel &&
                (nullptr != (packet = popEncodedData())))
@@ -325,16 +333,23 @@ namespace sfe
         
         // Some media files don't define the channel layout, in this case take a default one
         // according to the channels' count
-        if (m_stream->codecpar->channel_layout == 0)
+        if (m_stream->codecpar->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
         {
-            m_stream->codecpar->channel_layout = av_get_default_channel_layout(m_stream->codecpar->channels);
+          av_channel_layout_default(&m_stream->codecpar->ch_layout, m_stream->codecpar->ch_layout.nb_channels);
         }
-        
+
+        err = av_channel_layout_check(&m_stream->codecpar->ch_layout);
+        CHECK(err, "AudioStream::initResampler() - invalid channel layout");
+        CHECK(m_stream->codecpar->ch_layout.order != AV_CHANNEL_ORDER_CUSTOM, "AudioStream::initResampler() - unhandled custom channel order");
+
+        // Constant output channel layout
+        AVChannelLayout out_chlayout = AV_CHANNEL_LAYOUT_STEREO;
+
         /* set options */
-        av_opt_set_int        (m_swrCtx, "in_channel_layout",  m_stream->codecpar->channel_layout, 0);
+        av_opt_set_chlayout   (m_swrCtx, "in_chlayout", &m_stream->codecpar->ch_layout, 0);
         av_opt_set_int        (m_swrCtx, "in_sample_rate",     m_stream->codecpar->sample_rate,    0);
         av_opt_set_sample_fmt (m_swrCtx, "in_sample_fmt",      static_cast<AVSampleFormat>(m_stream->codecpar->format),     0);
-        av_opt_set_int        (m_swrCtx, "out_channel_layout", AV_CH_LAYOUT_STEREO,             0);
+        av_opt_set_chlayout   (m_swrCtx, "out_chlayout", &out_chlayout, 0);
         av_opt_set_int        (m_swrCtx, "out_sample_rate",    m_stream->codecpar->sample_rate,    0);
         av_opt_set_sample_fmt (m_swrCtx, "out_sample_fmt",     AV_SAMPLE_FMT_S16,               0);
         
@@ -348,10 +363,12 @@ namespace sfe
         m_maxDstNbSamples = m_dstNbSamples = 1024;
         
         /* Create the resampling output buffer */
-        m_dstNbChannels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+        m_dstNbChannels = getStereoChannelCount();
         err = av_samples_alloc_array_and_samples(&m_dstData, &m_dstLinesize, m_dstNbChannels,
                                                  m_dstNbSamples, AV_SAMPLE_FMT_S16, 0);
         CHECK(err >= 0, "AudioStream::initResampler() - av_samples_alloc_array_and_samples error");
+
+        av_channel_layout_uninit(&out_chlayout);
     }
     
     void AudioStream::resampleFrame(const AVFrame* frame, uint8_t*& outSamples, int& outNbSamples)
@@ -388,7 +405,7 @@ namespace sfe
     
     int AudioStream::timeToSamples(const sf::Time& time) const
     {
-        const int channelCount = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+        const int channelCount = getStereoChannelCount();
         int64_t samplesPerSecond = m_sampleRatePerChannel * channelCount;
         int64_t samples = (samplesPerSecond * time.asMicroseconds()) / 1000000;
         CHECK(samples >= 0, "computation overflow");
@@ -403,7 +420,7 @@ namespace sfe
     
     sf::Time AudioStream::samplesToTime(int nbSamples) const
     {
-        int64_t samplesPerChannel = nbSamples / av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
+        int64_t samplesPerChannel = nbSamples / getStereoChannelCount();
         int64_t microseconds = 1000000 * samplesPerChannel / m_sampleRatePerChannel;
         CHECK(microseconds >= 0, "computation overflow");
         
