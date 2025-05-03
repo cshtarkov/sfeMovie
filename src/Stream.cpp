@@ -33,6 +33,7 @@ extern "C"
 #include "TimerPriorities.hpp"
 #include <cassert>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
 
 namespace sfe
@@ -116,21 +117,21 @@ namespace sfe
     void Stream::pushEncodedData(AVPacket* packet)
     {
         CHECK(packet, "invalid argument");
-        sf::Lock l(m_readerMutex);
+        std::unique_lock l(m_readerMutex);
         m_packetList.push_back(packet);
     }
     
     void Stream::prependEncodedData(AVPacket* packet)
     {
         CHECK(packet, "invalid argument");
-        sf::Lock l(m_readerMutex);
+        std::unique_lock l(m_readerMutex);
         m_packetList.push_front(packet);
     }
     
     AVPacket* Stream::popEncodedData()
     {
         AVPacket* result = nullptr;
-        sf::Lock l(m_readerMutex);
+        std::unique_lock l(m_readerMutex);
         
         if (m_packetList.empty() && !isPassive())
         {
@@ -161,7 +162,7 @@ namespace sfe
     
     void Stream::flushBuffers()
     {
-        sf::Lock l(m_readerMutex);
+        std::unique_lock l(m_readerMutex);
         if (getStatus() == Playing)
         {
             sfeLogWarning("packets flushed while the stream is still playing");
@@ -210,7 +211,7 @@ namespace sfe
         
         if (! m_packetList.empty())
         {
-            sf::Lock l(m_readerMutex);
+            std::unique_lock l(m_readerMutex);
             AVPacket* packet = m_packetList.front();
             CHECK(packet, "internal inconcistency");
             

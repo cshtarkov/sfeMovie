@@ -3,14 +3,6 @@
 #
 # USAGE
 #
-# By default, the dynamic version of sfeMovie will be found. To find the static
-# one instead, you must set the SFEMOVIE_STATIC_LIBRARIES variable to TRUE before
-# calling find_package( sfeMovie ). In that case SFEMOVIE_STATIC will also be defined
-# by this script. Example:
-#
-# set( SFEMOVIE_STATIC_LIBRARIES TRUE )
-# find_package( sfeMovie )
-#
 # If sfeMovie is not installed in a standard path, you can set
 # SFEMOVIE_ROOT CMake (or environment) variables to tell CMake where to look for
 # sfeMovie.
@@ -35,13 +27,6 @@
 
 include(FindPackageHandleStandardArgs)
 
-if( SFEMOVIE_STATIC_LIBRARIES )
-	set( SFEMOVIE_SUFFIX "-s" )
-	add_definitions( -DSFEMOVIE_STATIC )
-else()
-	set( SFEMOVIE_SUFFIX "" )
-endif()
-
 set (LIBRARY_SEARCH_PATHS
 	/usr
 	/usr/local
@@ -56,7 +41,7 @@ find_path(
 
 find_library(
 	SFEMOVIE_LIBRARY_RELEASE
-	sfeMovie${SFEMOVIE_SUFFIX}
+	sfeMovie
 	PATH_SUFFIXES
 		lib
 		lib64
@@ -65,7 +50,7 @@ find_library(
 
 find_library(
 	SFEMOVIE_LIBRARY_DEBUG
-	sfeMovie${SFEMOVIE_SUFFIX}-d
+	sfeMovie-d
 	PATH_SUFFIXES
 		lib
 		lib64

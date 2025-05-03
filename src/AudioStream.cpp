@@ -33,7 +33,9 @@ extern "C"
 }
 
 #include <cstring>
+#include <cstdint>
 #include <iostream>
+#include <vector>
 #include "AudioStream.hpp"
 #include "Log.hpp"
 #include <sfeMovie/Movie.hpp>
@@ -48,10 +50,10 @@ namespace sfe
             sf::Clock timeout;
             while (stream.getStatus() != expectedStatus && timeout.getElapsedTime() < sf::seconds(5))
                 sf::sleep(sf::microseconds(10));
-            CHECK(timeout.getElapsedTime() < sf::seconds(5), "Audio did not reach state " + s(expectedStatus) + " within 5 seconds");
+            CHECK(timeout.getElapsedTime() < sf::seconds(5), "Audio did not reach state " + s(static_cast<int>(expectedStatus)) + " within 5 seconds");
         }
         
-        const int BytesPerSample = sizeof(sf::Int16); // Signed 16 bits audio sample
+        const int BytesPerSample = sizeof(std::int16_t); // Signed 16 bits audio sample
 
         int getStereoChannelCount()
         {
@@ -88,13 +90,16 @@ namespace sfe
         m_sampleRatePerChannel = m_stream->codecpar->sample_rate;
         
         // Alloc a two seconds buffer
-        m_samplesBuffer = (sf::Int16*)av_malloc(sizeof(sf::Int16) * getStereoChannelCount()
+        m_samplesBuffer = (std::int16_t*)av_malloc(sizeof(std::int16_t) * getStereoChannelCount()
                                                 * m_sampleRatePerChannel * 2); // * 2 is for 2 seconds
         CHECK(m_samplesBuffer, "AudioStream::AudioStream() - out of memory");
         
         // Initialize the sf::SoundStream
         // Whatever the channel count is, it'll we resampled to stereo
-        sf::SoundStream::initialize(getStereoChannelCount(), m_sampleRatePerChannel);
+        const auto channelMap = std::vector<sf::SoundChannel>{
+          sf::SoundChannel::FrontLeft,
+          sf::SoundChannel::FrontRight};
+        sf::SoundStream::initialize(getStereoChannelCount(), m_sampleRatePerChannel, channelMap);
         
         // Initialize resampler to be able to give signed 16 bits samples to SFML
         initResampler();
@@ -126,10 +131,10 @@ namespace sfe
     void AudioStream::flushBuffers()
     {
         sf::SoundStream::Status sfStatus = sf::SoundStream::getStatus();
-        CHECK (sfStatus != sf::SoundStream::Playing, "Trying to flush while audio is playing, this will introduce an audio glitch!");
+        CHECK (sfStatus != sf::SoundStream::Status::Playing, "Trying to flush while audio is playing, this will introduce an audio glitch!");
         
         // Flush audio driver/OpenAL/SFML buffer
-        if (sfStatus != sf::SoundStream::Stopped)
+        if (sfStatus != sf::SoundStream::Status::Stopped)
             sf::SoundStream::stop();
         
         m_extraAudioTime = sf::Time::Zero;
@@ -147,15 +152,15 @@ namespace sfe
         
         switch (sfStatus)
         {
-            case sf::SoundStream::Playing:
+            case sf::SoundStream::Status::Playing:
                 setStatus(sfe::Playing);
                 break;
                 
-            case sf::SoundStream::Paused:
+            case sf::SoundStream::Status::Paused:
                 setStatus(sfe::Paused);
                 break;
                 
-            case sf::SoundStream::Stopped:
+            case sf::SoundStream::Status::Stopped:
                 setStatus(sfe::Stopped);
                 break;
                 
@@ -447,22 +452,22 @@ namespace sfe
         else
         {
             sf::SoundStream::play();
-            waitForStatusUpdate(*this, sf::SoundStream::Playing);
+            waitForStatusUpdate(*this, sf::SoundStream::Status::Playing);
         }
     }
     
     void AudioStream::didPlay(const Timer& timer, sfe::Status previousStatus)
     {
-        CHECK(SoundStream::getStatus() == SoundStream::Playing, "AudioStream::didPlay() - willPlay() not executed!");
+        CHECK(SoundStream::getStatus() == SoundStream::Status::Playing, "AudioStream::didPlay() - willPlay() not executed!");
         Stream::didPlay(timer, previousStatus);
     }
     
     void AudioStream::didPause(const Timer& timer, sfe::Status previousStatus)
     {
-        if (sf::SoundStream::getStatus() == sf::SoundStream::Playing)
+        if (sf::SoundStream::getStatus() == sf::SoundStream::Status::Playing)
         {
             sf::SoundStream::pause();
-            waitForStatusUpdate(*this, sf::SoundStream::Paused);
+            waitForStatusUpdate(*this, sf::SoundStream::Status::Paused);
         }
         
         Stream::didPause(timer, previousStatus);
@@ -471,7 +476,7 @@ namespace sfe
     void AudioStream::didStop(const Timer& timer, sfe::Status previousStatus)
     {
         sf::SoundStream::stop();
-        waitForStatusUpdate(*this, sf::SoundStream::Stopped);
+        waitForStatusUpdate(*this, sf::SoundStream::Status::Stopped);
         
         Stream::didStop(timer, previousStatus);
     }

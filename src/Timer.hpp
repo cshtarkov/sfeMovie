@@ -25,6 +25,7 @@
 #ifndef SFEMOVIE_TIMER_HPP
 #define SFEMOVIE_TIMER_HPP
 
+#include <map>
 #include <set>
 #include <SFML/System.hpp>
 #include <sfeMovie/Movie.hpp>

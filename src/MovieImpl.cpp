@@ -32,13 +32,15 @@
 
 #define LAYOUT_DEBUGGER_ENABLED 0
 
+static sf::Texture emptyTexture;
+
 namespace sfe
 {
     MovieImpl::MovieImpl(sf::Transformable& movieView) :
     m_movieView(movieView),
     m_demuxer(nullptr),
     m_timer(nullptr),
-    m_videoSprite()
+    m_videoSprite(emptyTexture)
     {
     }
     
@@ -73,7 +75,7 @@ namespace sfe
                 if (!videoStreams.empty())
                 {
                     sf::Vector2f size = getSize();
-                    m_displayFrame = sf::FloatRect(0, 0, size.x, size.y);
+                    m_displayFrame = sf::FloatRect({0, 0}, {size.x, size.y});
                 }
                 
                 return true;
@@ -293,7 +295,7 @@ namespace sfe
     
     void MovieImpl::fit(float x, float y, float width, float height, bool preserveRatio)
     {
-        fit(sf::FloatRect(x, y, width, height), preserveRatio);
+        fit(sf::FloatRect({x, y}, {width, height}), preserveRatio);
     }
     
     void MovieImpl::fit(sf::FloatRect frame, bool preserveRatio)
@@ -306,7 +308,7 @@ namespace sfe
             return;
         }
         
-        sf::Vector2f wanted_size = sf::Vector2f(frame.width, frame.height);
+        sf::Vector2f wanted_size = sf::Vector2f(frame.size.x, frame.size.y);
         sf::Vector2f new_size;
         
         if (preserveRatio)
@@ -334,10 +336,11 @@ namespace sfe
             new_size = wanted_size;
         }
         
-        m_videoSprite.setPosition((wanted_size.x - new_size.x) / 2.,
-                                  (wanted_size.y - new_size.y) / 2.);
-        m_movieView.setPosition(frame.left, frame.top);
-        m_videoSprite.setScale((float)new_size.x / movie_size.x, (float)new_size.y / movie_size.y);
+        m_videoSprite.setPosition(
+          {(wanted_size.x - new_size.x) / 2., (wanted_size.y - new_size.y) / 2.});
+        m_movieView.setPosition(frame.position);
+        m_videoSprite.setScale(
+          {(float)new_size.x / movie_size.x, (float)new_size.y / movie_size.y});
         m_displayFrame = frame;
     }
     
@@ -445,16 +448,7 @@ namespace sfe
     
     const sf::Texture& MovieImpl::getCurrentImage() const
     {
-        static sf::Texture emptyTexture;
-        
-        if (m_videoSprite.getTexture())
-        {
-            return * m_videoSprite.getTexture();
-        }
-        else
-        {
-            return emptyTexture;
-        }
+        return m_videoSprite.getTexture();
     }
     
     void MovieImpl::draw(sf::RenderTarget& target, sf::RenderStates states) const
@@ -468,7 +462,9 @@ namespace sfe
     
     void MovieImpl::didUpdateVideo(const VideoStream& sender, const sf::Texture& image)
     {
-        if (m_videoSprite.getTexture() != &image)
+        if (&m_videoSprite.getTexture() != &image) {
             m_videoSprite.setTexture(image);
+            m_videoSprite.setTextureRect({{0, 0}, {static_cast<int>(image.getSize().x), static_cast<int>(image.getSize().y)}});
+        }
     }
 }

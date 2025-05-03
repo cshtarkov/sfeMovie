@@ -120,7 +120,7 @@ namespace sfe
         unsigned m_sampleRatePerChannel;
         
         // Private data
-        sf::Int16* m_samplesBuffer;
+        int16_t* m_samplesBuffer;
         AVFrame* m_audioFrame;
         sf::Time m_extraAudioTime;
         

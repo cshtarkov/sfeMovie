@@ -64,7 +64,7 @@ namespace sfe
         CHECK(err >= 0, "VideoStream() - av_image_alloc() error");
         
         // SFML video frame
-        err = m_texture.create(m_stream->codecpar->width, m_stream->codecpar->height);
+        err = m_texture.resize({m_stream->codecpar->width, m_stream->codecpar->height});
         CHECK(err, "VideoStream() - sf::Texture::create() error");
         
         initRescaler();

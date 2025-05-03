@@ -88,17 +88,17 @@ void LayoutDebugger<T>::draw(sf::RenderTarget& target, sf::RenderStates states) 
         
         sf::Vertex points[] =
         {
-            sf::Vertex(sf::Vector2f(bounds.left, bounds.top), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left + bounds.width, bounds.top), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left, bounds.top + bounds.height), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left + bounds.width, bounds.top + bounds.height), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left, bounds.top), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left, bounds.top + bounds.height), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left + bounds.width, bounds.top + bounds.height), m_debugColor),
-            sf::Vertex(sf::Vector2f(bounds.left + bounds.width, bounds.top), m_debugColor)
-        };
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x, bounds.position.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x + bounds.size.x, bounds.position.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x, bounds.position.y + bounds.size.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x, bounds.position.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x, bounds.position.y + bounds.size.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y), .color = m_debugColor},
+            sf::Vertex{.position = sf::Vector2f(bounds.position.x + bounds.size.x, bounds.position.y), .color = m_debugColor}
+          };
         
-        target.draw(points, 8, sf::LinesStrip);
+        target.draw(points, 8, sf::PrimitiveType::LineStrip);
     }
 }
 

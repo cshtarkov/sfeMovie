@@ -66,8 +66,8 @@ int main(int argc, const char *argv[])
     }
     
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
-    float width = std::min(static_cast<float>(desktopMode.width), movie.getSize().x);
-    float height = std::min(static_cast<float>(desktopMode.height), movie.getSize().y);
+    float width = std::min(static_cast<float>(desktopMode.size.x), movie.getSize().x);
+    float height = std::min(static_cast<float>(desktopMode.size.y), movie.getSize().y);
     
     // For audio files, there is no frame size, set a minimum:
     if (width * height < 1.f)
@@ -77,7 +77,7 @@ int main(int argc, const char *argv[])
     }
 
     // Create window
-    sf::RenderWindow window(sf::VideoMode(width, height), "sfeMovie Player",
+    sf::RenderWindow window(sf::VideoMode({width, height}), "sfeMovie Player",
                             sf::Style::Close | sf::Style::Resize);
     
     // Scale movie to the window drawing area and enable VSync
@@ -89,22 +89,20 @@ int main(int argc, const char *argv[])
     
     while (window.isOpen())
     {
-        sf::Event ev;
-        while (window.pollEvent(ev))
+        while (const auto event = window.pollEvent())
         {
+          const auto& ev = *event;
             // Window closure
-            if (ev.type == sf::Event::Closed ||
-                (ev.type == sf::Event::KeyPressed &&
-                 ev.key.code == sf::Keyboard::Escape))
+            if (const auto keyPressed = ev.getIf<sf::Event::KeyPressed>(); (keyPressed && keyPressed->code == sf::Keyboard::Key::Escape) || ev.is<sf::Event::Closed>())
             {
                 window.close();
             }
             
-            if (ev.type == sf::Event::KeyPressed)
+            if (const auto keyPressed = ev.getIf<sf::Event::KeyPressed>())
             {
-                switch (ev.key.code)
+                switch (keyPressed->code)
                 {
-                    case sf::Keyboard::Space:
+                    case sf::Keyboard::Key::Space:
                         if (movie.getStatus() == sfe::Playing)
                             movie.pause();
                         else
@@ -114,10 +112,10 @@ int main(int argc, const char *argv[])
                         break;
                 }
             }
-            else if (ev.type == sf::Event::Resized)
+            else if (ev.is<sf::Event::Resized>())
             {
                 movie.fit(0, 0, window.getSize().x, window.getSize().y);
-                window.setView(sf::View(sf::FloatRect(0, 0, (float)window.getSize().x, (float)window.getSize().y)));
+                window.setView(sf::View(sf::FloatRect({0, 0}, {(float)window.getSize().x, (float)window.getSize().y})));
             }
         }
         

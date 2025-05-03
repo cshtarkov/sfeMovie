@@ -29,6 +29,7 @@
 #include "Timer.hpp"
 #include <list>
 #include <memory>
+#include <mutex>
 #include <SFML/System.hpp>
 #include <sfeMovie/Movie.hpp>
 
@@ -194,7 +195,7 @@ namespace sfe
         std::string m_language;
         std::list <AVPacket*> m_packetList;
         Status m_status;
-        sf::Mutex m_readerMutex;
+        std::recursive_mutex m_readerMutex;
     };
 }
 

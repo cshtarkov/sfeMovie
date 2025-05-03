@@ -57,20 +57,20 @@ void UserInterface::draw() const
         return;
     
     sf::RectangleShape background(sf::Vector2f(m_window.getSize().x - 2 * kHorizontalMargin, kTimelineBackgroundHeight));
-    background.setPosition(kHorizontalMargin, m_window.getSize().y - kTimelineBackgroundHeight - kVerticalMargin);
+    background.setPosition({kHorizontalMargin, m_window.getSize().y - kTimelineBackgroundHeight - kVerticalMargin});
     background.setFillColor(sf::Color(0, 0, 0, 255/2));
     
     sf::RectangleShape border(sf::Vector2f(background.getSize().x - 2 * kTimelineInnerMargin, background.getSize().y - 2 * kTimelineInnerMargin));
-    border.setPosition(background.getPosition().x + kTimelineInnerMargin, background.getPosition().y + kTimelineInnerMargin);
+    border.setPosition({background.getPosition().x + kTimelineInnerMargin, background.getPosition().y + kTimelineInnerMargin});
     border.setFillColor(sf::Color::Transparent);
     border.setOutlineColor(sf::Color::White);
     border.setOutlineThickness(1.0);
     
     float fprogress = m_movie.getPlayingOffset().asSeconds() / m_movie.getDuration().asSeconds();
     sf::RectangleShape progress(sf::Vector2f(1, border.getSize().y - 2 * border.getOutlineThickness()));
-    progress.setPosition(border.getPosition().x + border.getOutlineThickness() +
+    progress.setPosition({border.getPosition().x + border.getOutlineThickness() +
                          fprogress * (border.getSize().x - 2 * border.getOutlineThickness()),
-                         border.getPosition().y + border.getOutlineThickness());
+                         border.getPosition().y + border.getOutlineThickness()});
     progress.setFillColor(sf::Color::White);
     
     m_window.draw(background);

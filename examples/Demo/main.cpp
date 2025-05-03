@@ -87,8 +87,8 @@ int main(int argc, const char *argv[])
     
     bool fullscreen = false;
     sf::VideoMode desktopMode = sf::VideoMode::getDesktopMode();
-    float width = std::min(static_cast<float>(desktopMode.width), movie.getSize().x);
-    float height = std::min(static_cast<float>(desktopMode.height), movie.getSize().y);
+    float width = std::min(static_cast<float>(desktopMode.size.x), movie.getSize().x);
+    float height = std::min(static_cast<float>(desktopMode.size.y), movie.getSize().y);
     
     // For audio files, there is no frame size, set a minimum:
     if (width * height < 1.f)
@@ -98,7 +98,7 @@ int main(int argc, const char *argv[])
     }
     
     // Create window
-    sf::RenderWindow window(sf::VideoMode(width, height), "sfeMovie Player",
+    sf::RenderWindow window(sf::VideoMode({width, height}), "sfeMovie Player",
                             sf::Style::Close | sf::Style::Resize);
     
     // Scale movie to the window drawing area and enable VSync
@@ -114,40 +114,38 @@ int main(int argc, const char *argv[])
     
     while (window.isOpen())
     {
-        sf::Event ev;
-        while (window.pollEvent(ev))
+        while (const auto event = window.pollEvent())
         {
+            const auto& ev = *event;
             // Window closure
-            if (ev.type == sf::Event::Closed ||
-                (ev.type == sf::Event::KeyPressed &&
-                 ev.key.code == sf::Keyboard::Escape))
+            if (const auto keyPressed = ev.getIf<sf::Event::KeyPressed>(); (keyPressed && keyPressed->code == sf::Keyboard::Key::Escape) || ev.is<sf::Event::Closed>())
             {
                 window.close();
             }
             
-            if (ev.type == sf::Event::KeyPressed)
+            if (const auto keyPressed = ev.getIf<sf::Event::KeyPressed>())
             {
-                switch (ev.key.code)
+                switch (keyPressed->code)
                 {
-                    case sf::Keyboard::Space:
+                    case sf::Keyboard::Key::Space:
                         if (movie.getStatus() == sfe::Playing)
                             movie.pause();
                         else
                             movie.play();
                         break;
                         
-                    case sf::Keyboard::A:
-                        if (ev.key.alt)
+                    case sf::Keyboard::Key::A:
+                        if (keyPressed->alt)
                             selector.selectNextStream(sfe::Audio);
                         break;
                         
-                    case sf::Keyboard::F:
+                    case sf::Keyboard::Key::F:
                         fullscreen = !fullscreen;
                         
                         if (fullscreen)
-                            window.create(desktopMode, "sfeMovie Player", sf::Style::Fullscreen);
+                            window.create(desktopMode, "sfeMovie Player", sf::State::Fullscreen);
                         else
-                            window.create(sf::VideoMode(width, height), "sfeMovie Player",
+                            window.create(sf::VideoMode({width, height}), "sfeMovie Player",
                                           sf::Style::Close | sf::Style::Resize);
                         
                         window.setFramerateLimit(60);
@@ -156,43 +154,43 @@ int main(int argc, const char *argv[])
                         ui.applyProperties();
                         break;
                         
-                    case sf::Keyboard::H:
+                    case sf::Keyboard::Key::H:
                         ui.toggleVisible();
                         break;
                         
-                    case sf::Keyboard::I:
+                    case sf::Keyboard::Key::I:
                         displayMediaInfo(movie);;
                         break;
                         
-                    case sf::Keyboard::V:
-                        if (ev.key.alt)
+                    case sf::Keyboard::Key::V:
+                        if (keyPressed->alt)
                             selector.selectNextStream(sfe::Video);
                     default:
                         break;
                 }
             }
-            else if (ev.type == sf::Event::MouseWheelMoved)
+            else if (const auto mouseWheelScrolled = ev.getIf<sf::Event::MouseWheelScrolled>())
             {
-                float volume = movie.getVolume() + 10 * ev.mouseWheel.delta;
+                float volume = movie.getVolume() + 10 * mouseWheelScrolled->delta;
                 volume = std::min(volume, 100.f);
                 volume = std::max(volume, 0.f);
                 movie.setVolume(volume);
                 std::cout << "Volume changed to " << int(volume) << "%" << std::endl;
             }
-            else if (ev.type == sf::Event::Resized)
+            else if (ev.is<sf::Event::Resized>())
             {
                 movie.fit(0, 0, window.getSize().x, window.getSize().y);
-                window.setView(sf::View(sf::FloatRect(0, 0, (float)window.getSize().x, (float)window.getSize().y)));
+                window.setView(sf::View(sf::FloatRect({0, 0}, {(float)window.getSize().x, (float)window.getSize().y})));
             }
-            else if (ev.type == sf::Event::MouseButtonPressed ||
-                     (ev.type == sf::Event::MouseMoved && sf::Mouse::isButtonPressed(sf::Mouse::Left)))
+            else if (ev.is<sf::Event::MouseButtonPressed>() ||
+                     (ev.is<sf::Event::MouseMoved>() && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)))
             {
                 int xPos = 0;
                 
-                if (ev.type == sf::Event::MouseButtonPressed)
-                    xPos = ev.mouseButton.x;
-                else if (ev.type == sf::Event::MouseMoved)
-                    xPos = ev.mouseMove.x;
+                if (const auto mouseButtonPressed = ev.getIf<sf::Event::MouseButtonPressed>())
+                    xPos = mouseButtonPressed->position.x;
+                else if (const auto mouseMoved = ev.getIf<sf::Event::MouseMoved>())
+                    xPos = mouseMoved->position.x;
                 
                 float ratio = static_cast<float>(xPos) / window.getSize().x;
                 sf::Time targetTime = ratio * movie.getDuration();

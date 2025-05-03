@@ -1,5 +1,5 @@
 
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required (VERSION 4.0)
 
 
 # set a default build type if none was provided
@@ -59,14 +59,11 @@ if (MSVC)
     endif()
 else()
     include(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-    CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-    if(COMPILER_SUPPORTS_CXX11)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    elseif(COMPILER_SUPPORTS_CXX0X)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+    if(COMPILER_SUPPORTS_CXX17)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     else()
-        message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+        message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
     endif()
 endif()
 
@@ -80,18 +77,7 @@ find_package(FFMPEG REQUIRED)
 # ================================================ SFML SETUP ================================================= #
 #################################################################################################################
 
-# Static sfeMovie lib has no interest on Linux or OS X
-if (WINDOWS)
-    set (SFEMOVIE_BUILD_STATIC FALSE CACHE BOOL "TRUE to build static version of sfeMovie")
-endif()
-
-if (SFEMOVIE_BUILD_STATIC)
-    set (SFML_STATIC_LIBRARIES TRUE)
-endif()
-
-find_package (SFML 2.3 COMPONENTS graphics window system audio REQUIRED)
-message(STATUS "SFML libraries: ${SFML_LIBRARIES}")
-message(STATUS "Additional dependencies: ${SFML_DEPENDENCIES}")
+find_package (SFML 3.0 COMPONENTS Graphics Window System Audio REQUIRED)
 
 #################################################################################################################
 # ============================================== sfeMovie SETUP =============================================== #
@@ -108,34 +94,23 @@ if (APPLE) # ========================================== macOS ==================
 endif()
 
 # Set the search directories for compiling and link editing
-set(SFEMOVIE_INCLUDE_DIRS "${SFML_INCLUDE_DIR};${PUBLIC_HEADERS};${PRIVATE_HEADERS};${FFMPEG_INCLUDE_DIRS}")
+set(SFEMOVIE_INCLUDE_DIRS "${PUBLIC_HEADERS};${PRIVATE_HEADERS};${FFMPEG_INCLUDE_DIRS}")
 
 include_directories (${SFEMOVIE_INCLUDE_DIRS})
 message (STATUS "Headers directories: ${SFEMOVIE_INCLUDE_DIRS}")
 
 source_group("Public headers" FILES ${HEADER_FILES})
-if (SFEMOVIE_BUILD_STATIC)
-    add_library(${SFEMOVIE_LIB} STATIC ${SOURCE_FILES} ${HEADER_FILES})
-else()
-    add_library(${SFEMOVIE_LIB} SHARED ${SOURCE_FILES} ${HEADER_FILES})
-endif()
+add_library(${SFEMOVIE_LIB} SHARED ${SOURCE_FILES} ${HEADER_FILES})
 
 if (NeedsFFmpegCompilation)
     add_dependencies(${SFEMOVIE_LIB} FFmpeg)
 endif()
 
 # Define the libraries sfeMovie should link against
-if (SFEMOVIE_BUILD_STATIC)
-    set_target_properties(${SFEMOVIE_LIB} PROPERTIES
-        COMPILE_DEFINITIONS SFEMOVIE_STATIC
-        COMPILE_DEFINITIONS SFML_STATIC)
-    message(WARNING "You chose to build a static library of sfeMovie, this assumes that you will also statically link your software against SFML."
-            "sfeMovie will be built with SFML_STATIC defined.")
-else()
-    set(SFEMOVIE_LIBRARIES ${SFML_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES} ${SFML_DEPENDENCIES})
-    message(STATUS "Link sfeMovie against: ${LIBASS_LIBRARIES} ${SFML_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES} ${SFML_DEPENDENCIES}")
-    target_link_libraries(${SFEMOVIE_LIB} PRIVATE ${SFEMOVIE_LIBRARIES})
-endif()
+set(SFEMOVIE_LIBRARIES ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES})
+message(STATUS "Link sfeMovie against: ${LIBASS_LIBRARIES} ${FFMPEG_LIBRARIES} ${OTHER_LIBRARIES}")
+target_link_libraries(${SFEMOVIE_LIB} PRIVATE ${SFEMOVIE_LIBRARIES})
+target_link_libraries(${SFEMOVIE_LIB} PUBLIC SFML::Graphics SFML::Window SFML::System SFML::Audio)
 
 include (${CMAKE_SOURCE_DIR}/cmake/Properties.cmake)
 include (${CMAKE_SOURCE_DIR}/cmake/Install.cmake)

@@ -38,6 +38,7 @@ extern "C"
 #include "TimerPriorities.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <mutex>
 
 namespace sfe
 {
@@ -343,7 +344,7 @@ namespace sfe
     {
         CHECK(! stream.isPassive(), "Internal inconcistency - Cannot feed a passive stream");
         
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         while ((!didReachEndOfFile() || hasPendingDataForStream(stream)) && stream.needsMoreData())
         {
@@ -403,7 +404,7 @@ namespace sfe
     
     AVPacket* Demuxer::readPacket()
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         AVPacket *pkt = nullptr;
         int err = 0;
@@ -425,7 +426,7 @@ namespace sfe
     
     void Demuxer::flushBuffers()
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         for (std::pair<const Stream*, std::list<AVPacket*> >&& pair : m_pendingDataForActiveStreams)
         {
@@ -440,7 +441,7 @@ namespace sfe
     
     void Demuxer::queueEncodedData(AVPacket* packet)
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         std::set<std::shared_ptr<Stream>> connectedStreams = getSelectedStreams();
         
@@ -460,7 +461,7 @@ namespace sfe
     
     bool Demuxer::hasPendingDataForStream(const Stream& stream) const
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         const std::map<const Stream*, std::list<AVPacket*> >::const_iterator it =
             m_pendingDataForActiveStreams.find(&stream);
@@ -473,7 +474,7 @@ namespace sfe
     
     AVPacket* Demuxer::gatherQueuedPacketForStream(Stream& stream)
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         
         std::map<const Stream*, std::list<AVPacket*> >::iterator it
             = m_pendingDataForActiveStreams.find(&stream);
@@ -495,7 +496,7 @@ namespace sfe
     
     bool Demuxer::distributePacket(AVPacket* packet, Stream& stream)
     {
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         CHECK(packet, "Demuxer::distributePacket() - invalid argument");
         
         bool distributed = false;
@@ -540,7 +541,7 @@ namespace sfe
     {
         CHECK(! starvingStream.isPassive(), "Internal inconcistency - passive streams cannot request data");
         
-        sf::Lock l(m_synchronized);
+        std::unique_lock l(m_synchronized);
         feedStream(starvingStream);
     }
     

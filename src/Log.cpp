@@ -25,6 +25,7 @@
 #include "Log.hpp"
 #include "Macros.hpp"
 #include <iostream>
+#include <mutex>
 #include <SFML/System.hpp>
 extern "C"
 {
@@ -36,7 +37,7 @@ namespace sfe
     namespace Log
     {
         static int g_logLevel = ErrorLogLevel;
-        static sf::Mutex g_synchronized;
+        static std::mutex g_synchronized;
         
         void initialize()
         {
@@ -49,7 +50,7 @@ namespace sfe
         
         void setLogLevel(LogLevel level)
         {
-            sf::Lock l(g_synchronized);
+            std::unique_lock l(g_synchronized);
             g_logLevel = level;
             
             switch (level)
@@ -74,7 +75,7 @@ namespace sfe
         
         void debug(const std::string& file, const std::string& message)
         {
-            sf::Lock l(g_synchronized);
+            std::unique_lock l(g_synchronized);
             
             if (g_logLevel >= DebugLogLevel)
             {
@@ -84,7 +85,7 @@ namespace sfe
         
         void warning(const std::string& file, const std::string& message)
         {
-            sf::Lock l(g_synchronized);
+            std::unique_lock l(g_synchronized);
             
             if (g_logLevel >= WarningLogLevel)
             {
@@ -94,7 +95,7 @@ namespace sfe
         
         void error(const std::string& file, const std::string& message)
         {
-            sf::Lock l(g_synchronized);
+            std::unique_lock l(g_synchronized);
             
             if (g_logLevel >= ErrorLogLevel)
             {
