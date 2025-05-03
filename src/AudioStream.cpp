@@ -103,6 +103,9 @@ namespace sfe
         
         // Initialize resampler to be able to give signed 16 bits samples to SFML
         initResampler();
+
+        // Make relative to listener
+        sf::SoundStream::setRelativeToListener(true);
     }
     
     /** Default destructor
