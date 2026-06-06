@@ -89,15 +89,6 @@ namespace sfe
         disconnect();
         Stream::flushBuffers();
         
-        if (m_formatCtx && m_stream && m_context)
-        {
-            avcodec_close(m_context);
-        }
-        else
-        {
-            sfeLogWarning("Stream lost connection to its codec, leaking");
-        }
-
         avcodec_free_context(&m_context);
     }
     
